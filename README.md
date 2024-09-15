@@ -41,7 +41,7 @@ This will create an image with the tag `update-dns`.
 
 To run the Docker container, use:
 ```bash
-docker run -p 80:80 update-dns
+docker run update-dns
 ```
 This will start a new container based on the `update-dns` image and map port 80 from the container to port 80 on your host machine.
 
