@@ -2,6 +2,11 @@ import requests
 import json
 import os
 
+# config from envs
+reg_ru_username = os.environ.get('REG_RU_USERNAME')
+reg_ru_password = os.environ.get('REG_RU_PASSWORD')
+domain_name = os.environ.get('DOMAIN_NAME')
+
 def get_external_ip():
     """Get the external IP address of this machine"""
     api_url = 'http://httpbin.org/ip'
@@ -9,19 +14,37 @@ def get_external_ip():
     print(f"External IP address: {response.json()['origin']}")
     return response.json()["origin"]
 
-def update_dns_record(ip):
-    """Update or set A record for the specified domain at Reg.RU"""
-    
-    reg_ru_username = os.environ.get('REG_RU_USERNAME')
-    reg_ru_password = os.environ.get('REG_RU_PASSWORD')
-    domain_name = os.environ.get('DOMAIN_NAME')
-
+def check_config ():
     if not all([reg_ru_username, reg_ru_password, domain_name]):
         print("Error: Environment variables are missing. Please set:")
         print("- REG_RU_USERNAME")
         print("- REG_RU_PASSWORD")
         print("- DOMAIN_NAME")
         exit(1)
+
+def check_old_records_exists():
+    api_endpoint = f'https://api.reg.ru/api/regru2/zone/get_resource_records'
+    data = {
+        'input_data': json.dumps({
+            'domains': [
+                {
+                    'dname': domain_name
+                }
+            ],
+            'password': reg_ru_password,
+            'username': reg_ru_username
+        }),
+        'input_format': 'json'
+    }
+    print(f"Payload being sent to Reg.RU:")
+    print(json.dumps(data['input_data'], indent=4))
+    
+    response = requests.post(api_endpoint, data=data)
+    print(f"Response from Reg.RU:")
+    print(response.text.strip())
+
+def update_dns_record(ip):
+    """Update or set A record for the specified domain at Reg.RU"""
 
     api_endpoint = f'https://api.reg.ru/api/regru2/zone/add_alias'
     data = {
@@ -66,7 +89,10 @@ def update_dns_record(ip):
     return False
 
 def main():
+
     external_ip = get_external_ip()
+    check_config()
+    check_old_records_exists()
     result = update_dns_record(external_ip)
 
     if not result:
